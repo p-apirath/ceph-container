@@ -7,13 +7,16 @@ function osd_volume_activate {
   # Find the OSD FSID from the OSD ID
   OSD_FSID="$(ceph-volume lvm list --format json | python -c "import sys, json; print(json.load(sys.stdin)[\"$OSD_ID\"][0][\"tags\"][\"ceph.osd_fsid\"])")"
 
+  # Find the OSD type
+  OSD_TYPE="$(ceph-volume lvm list --format json | python -c "import sys, json; print(json.load(sys.stdin)[\"$OSD_ID\"][0][\"type\"])")"
+
   # Discover the objectstore
-  if [[ "OSD_FILESTORE" -eq 1 ]]; then
+  if [[ "data journal" =~ $OSD_TYPE ]]; then
     OSD_OBJECTSTORE=(--filestore)
-  elif [[ "OSD_BLUESTORE" -eq 1 ]]; then
+  elif [[ "block wal db" =~ $OSD_TYPE ]]; then
     OSD_OBJECTSTORE=(--bluestore)
   else
-    log "Either OSD_FILESTORE or OSD_BLUESTORE must be set to 1."
+    log "Unable to discover osd objectstore for OSD type: $OSD_TYPE"
     exit 1
   fi
 
